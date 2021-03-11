@@ -8,7 +8,7 @@ Feature: Bind an application to a service using annotations
     Background:
         Given Namespace [TEST_NAMESPACE] is used
         * Service Binding Operator is running
-
+    @smoke
     Scenario: Provide binding info through backing service CRD annotation
         Given The Custom Resource Definition is present
             """
@@ -135,6 +135,7 @@ Feature: Bind an application to a service using annotations
         And The application env var "BACKEND_SPEC_IMAGENAME" has value "postgres"
         And The application env var "BACKEND_SPEC_DBNAME" has value "db-demo"
 
+    @smoke
     Scenario: Each value in referred slice of strings from service resource gets injected into app as separate env variable
         Given Generic test application "slos-app" is running
         And The Custom Resource Definition is present
@@ -196,6 +197,7 @@ Feature: Bind an application to a service using annotations
         And The application env var "BACKEND_TAGS_1" has value "is"
         And The application env var "BACKEND_TAGS_2" has value "power"
 
+    @smoke
     Scenario: Values extracted from each map by a given key in referred slice of maps from service resource gets injected into app as separate env variable
         Given Generic test application "slom-to-slos-app" is running
         And The Custom Resource Definition is present
@@ -257,7 +259,7 @@ Feature: Bind an application to a service using annotations
             """
         Then Service Binding "slom-to-slos-binding" is ready
         And The application env var "BACKEND_URL_0" has value "primary.example.com"
-        And The application env var "BACKEND_URL_1" has value "secondary.example.com"
+        And The application env var "BACKEND_URL_1" has value "secondary.example.comx"
         And The application env var "BACKEND_URL_2" has value "black-hole.example.com"
 
     Scenario: Each value in referred slice of maps from service resource gets injected into app as separate env variable

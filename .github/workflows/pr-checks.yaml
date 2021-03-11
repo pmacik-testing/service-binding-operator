@@ -15,6 +15,7 @@ env:
   MINIKUBE_VERSION: "1.15.1"
   TEST_ACCEPTANCE_CLI: "kubectl"
   CONTAINER_RUNTIME: "docker"
+  TEST_RESULTS: "out/acceptance-tests/TEST*.xml"
 
 jobs:
   lint:
@@ -56,19 +57,20 @@ jobs:
         run: |
           make test
 
-      - name: Upload Code Coverage Report
-        uses: codecov/codecov-action@v1
-        with:
-          file: cover.out
-          verbose: true
-          fail_ci_if_error: true
+      #- name: Upload Code Coverage Report
+      #  uses: codecov/codecov-action@v1
+      #  with:
+      #    file: cover.out
+      #    verbose: true
+      #    fail_ci_if_error: true
 
   acceptance:
     name: Acceptance Tests with Kubernetes and using OLM
     runs-on: ubuntu-20.04
 
     env:
-      EXTRA_BEHAVE_ARGS: "--tags=~@knative --tags=~@openshift"
+      EXTRA_BEHAVE_ARGS: "--tags=~@knative --tags=~@openshift --tags=@smoke"
+      TEST_RUN: Acceptance_tests_Kubernetes_with_OLM
 
     steps:
       - name: Checkout Git Repository
@@ -94,15 +96,31 @@ jobs:
           eval $(minikube docker-env)
           make OPERATOR_REPO_REF=$(minikube ip):5000/sbo SKIP_REGISTRY_LOGIN=true release-operator -o registry-login test-acceptance-with-bundle
 
+      - name: Setup Testspace
+        uses: testspace-com/setup-testspace@v1
+        with:
+          domain: ${{ github.repository_owner }}
+        if: always()
+
+      - name: Publish tests results to Testspace
+        run: |
+          testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}
+        if: always()
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: kubernetes-with-olm-test-results
+          path: ${{ env.TEST_RESULTS }}
 
   acceptance_without_olm:
     name: Acceptance tests running on Kubernetes without using OLM
     runs-on: ubuntu-20.04
 
     env:
-      EXTRA_BEHAVE_ARGS: "--tags=~@knative --tags=~@openshift --tags=~@olm"
+      EXTRA_BEHAVE_ARGS: "--tags=~@knative --tags=~@openshift --tags=~@olm --tags=@smoke"
       UMOCI_VERSION: "0.4.5"
       OPERATOR_VERSION: "0.4.0"
+      TEST_RUN: Acceptance_tests_Kubernetes_without_OLM
 
     steps:
       - name: Checkout Git Repository
@@ -135,3 +153,19 @@ jobs:
           make OPERATOR_REPO_REF=$(minikube ip):5000/sbo SKIP_REGISTRY_LOGIN=true release-operator -o registry-login release-manifests
           kubectl apply -f out/release.yaml
           make test-acceptance
+
+      - name: Setup Testspace
+        uses: testspace-com/setup-testspace@v1
+        with:
+          domain: ${{ github.repository_owner }}
+        if: always()
+
+      - name: Publish tests results to Testspace
+        run: |
+          testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}
+        if: always()
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: kubernetes-without-olm-test-results
+          path: ${{ env.TEST_RESULTS }}
